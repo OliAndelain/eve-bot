@@ -15,6 +15,8 @@ from main.databse_updater import DatabaseUpdate
 from main.verify import VerifyStatus, Verify
 from main.wiki import WikiStatus, Wiki
 from main.movies import Movies
+import main.mongo as mongo
+from main.dialogues import Dialogues
 import wikipedia
 import numpy as np
 import random
@@ -23,8 +25,8 @@ import nltk
 import colorama
 import logging
 
-username = ""
-password = ""
+username = ''
+password = ''
 node = ""
 
 
@@ -38,7 +40,10 @@ class WolfBot(KikClientCallback):
         self.buffer = []
         # for captcha eval
         self.verify = Verify(self.client)
+
         self.databaseUpdate = DatabaseUpdate(self.client)
+        self.mongo = mongo.MongoDatabase()
+        self.dialogues = Dialogues(self.client)
 
         self.bot_info = {}
 
@@ -332,8 +337,62 @@ class WolfBot(KikClientCallback):
             t = Thread(target=self.wiki_manual, args=(chat_message.group_jid, chat_message.body))
             t.start()
 
+        # else:
+        #     Wiki(self.client).wiki_thread_starter(chat_message.group_jid, chat_message.body)
+
+        # --------------------------
+        #  Substitutions
+        # -------------------------
+        elif " > " in chat_message.body:
+            sub = chat_message.body.split(" > ")
+            group = self.mongo.find_by_jid(chat_message.group_jid)
+            self.dialogues.save_dialogue(sub, group, chat_message.group_jid)
+
+        elif " >> " in chat_message.body:
+            sub = chat_message.body.split(" >> ")
+            admins = ast.literal_eval(Database("data.db").get_admins(chat_message.group_jid))
+            admins = list(admins.keys())
+            if chat_message.from_jid in admins:
+                group = self.mongo.find_by_jid(chat_message.group_jid)
+                self.dialogues.save_admin_dialogue(sub, group, chat_message.group_jid)
+            else:
+                self.client.send_chat_message(chat_message.group_jid, "This can only be done by an admin")
+
+        elif " >>> " in chat_message.body:
+            sub = chat_message.body.split(" >>> ")
+            group = self.mongo.find_by_jid(chat_message.group_jid)
+            self.dialogues.save_user_dialogue(sub, group, chat_message.group_jid, chat_message.from_jid)
+
+        elif "eve delete" in s:
+            key = s.split["eve delete "][0]
+
+            substitution = self.mongo.find_by_jid(chat_message.group_jid).substitutions.filter(key=key,
+                                                                                               user_jid=chat_message.from_jid)
+            print(chat_message.from_jid)
+            if len(substitution) != 0:
+                print("123")
+                substitution.delete()
+            else:
+                substitution = self.mongo.find_by_jid(chat_message.group_jid).substitutions.filter(
+                    key=chat_message.body, user_jid=None)
+                if len(substitution) != 0:
+                    self.client.send_chat_message(chat_message.group_jid, substitution[0].value)
+
+
         else:
-            Wiki(self.client).wiki_thread_starter(chat_message.group_jid, chat_message.body)
+            substitution = self.mongo.find_by_jid(chat_message.group_jid).substitutions.filter(key=chat_message.body,
+                                                                                               user_jid=chat_message.from_jid)
+            print(chat_message.from_jid)
+            if len(substitution) != 0:
+                print("123")
+                self.client.send_chat_message(chat_message.group_jid, substitution[0].value)
+            else:
+                substitution = self.mongo.find_by_jid(chat_message.group_jid).substitutions.filter(
+                    key=chat_message.body, user_jid=None)
+                if len(substitution) != 0:
+                    self.client.send_chat_message(chat_message.group_jid, substitution[0].value)
+
+
 
     def wiki_manual(self, group_jid, body):
         qu = ' '.join(body.split()[3:])
