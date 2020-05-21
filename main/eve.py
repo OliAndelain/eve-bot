@@ -24,7 +24,7 @@ import re
 import nltk
 import colorama
 import logging
-from botconfig importBotConfig
+from botconfig import BotConfig
 
 
 def main():
