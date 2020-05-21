@@ -24,10 +24,7 @@ import re
 import nltk
 import colorama
 import logging
-
-username = ''
-password = ''
-node = ""
+from botconfig importBotConfig
 
 
 def main():
@@ -36,7 +33,7 @@ def main():
 
 class WolfBot(KikClientCallback):
     def __init__(self):
-        self.client = KikClient(self, username, password, log_level=logging.INFO)
+        self.client = KikClient(self, BotConfig.username, BotConfig.password, log_level=logging.INFO)
         self.buffer = []
         # for captcha eval
         self.verify = Verify(self.client)
@@ -268,7 +265,7 @@ class WolfBot(KikClientCallback):
         #            break
 
         elif s == 'eve':
-            self.client.send_chat_message(chat_message.group_jid, 'Hello I\'m Eve. You called?')
+            self.client.send_chat_message(chat_message.group_jid, 'Hello I\'m {}. You called?'.format(BotConfig.botname))
 
         elif 'eve' in s and 'hug' in s:
             reply = np.random.choice([0, 1, 2, 3])
