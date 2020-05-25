@@ -271,7 +271,7 @@ class WolfBot(KikClientCallback):
         #            break
 
         elif s == 'eve':
-            self.client.send_chat_message(chat_message.group_jid, 'Hello I\'m {}. You called?'.format(BotConfig.botname))
+            self.client.send_chat_message(chat_message.group_jid, 'Hello I\'m Eve You called?')
 
         elif 'eve' in s and 'hug' in s:
             reply = np.random.choice([0, 1, 2, 3])
