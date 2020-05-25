@@ -24,10 +24,7 @@ import re
 import nltk
 import colorama
 import logging
-
-username = ''
-password = ''
-node = ""
+import main.BotConfig as BotConfig
 
 
 def main():
@@ -36,7 +33,13 @@ def main():
 
 class WolfBot(KikClientCallback):
     def __init__(self):
-        self.client = KikClient(self, username, password, log_level=logging.INFO)
+        bot_configuration = BotConfig.get_first_bot();
+        self.client = KikClient(self, 
+                kik_username=bot_configuration.username,
+                kik_password=bot_configuration.password, 
+                device_id_override=bot_configuration.device_id,
+                andoid_id_override=bot_configuration.android_id,
+                log_level=logging.INFO)
         self.buffer = []
         # for captcha eval
         self.verify = Verify(self.client)
