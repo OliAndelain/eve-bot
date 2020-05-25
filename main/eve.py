@@ -33,7 +33,7 @@ def main():
 
 class WolfBot(KikClientCallback):
     def __init__(self):
-        bot_configuration=BotConfig.get_first_bot();
+        bot_configuration = BotConfig.get_first_bot();
         self.client = KikClient(self, 
                 kik_username=bot_configuration.username,
                 kik_password=bot_configuration.password, 
@@ -271,7 +271,7 @@ class WolfBot(KikClientCallback):
         #            break
 
         elif s == 'eve':
-            self.client.send_chat_message(chat_message.group_jid, 'Hello I\'m Eve You called?')
+            self.client.send_chat_message(chat_message.group_jid, 'Hello I\'m Eve. You called?')
 
         elif 'eve' in s and 'hug' in s:
             reply = np.random.choice([0, 1, 2, 3])
