@@ -2,4 +2,4 @@ __pycache__
 main/__pycache__/
 kik-debug.log
 main/.eve.py.swp
-botconfig.py
+botconfig.json
