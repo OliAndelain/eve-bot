@@ -1,7 +1,9 @@
 import main.CommandParser as CommandParser
 
+tests=0;
 
 def test_CommandParser_text():
+	global tests
 	# input, command, expected
 	data=[
 		("notcmd arg", "cmd", (False, "")),
@@ -14,11 +16,11 @@ def test_CommandParser_text():
 	for datum in data:
 		output=CommandParser.parse_for_text(datum[0], datum[1])
 		if output != datum[2]:
-			print("FAILED test_CommandParser_text:")
-			print(datum)
-			print(output)
+			print("FAILED test_CommandParser_text - for data set {} received {}".format(datum, output))
+		tests=tests+1
 
 def test_CommandParser_number():
+	global tests
 	# input, command, expected
 	data=[
 		("notcmd arg", "cmd", (False, False, 0)),
@@ -31,9 +33,9 @@ def test_CommandParser_number():
 	for datum in data:
 		output=CommandParser.parse_for_number(datum[0], datum[1])
 		if output != datum[2]:
-			print("FAILED test_CommandParser_number:")
-			print(datum)
-			print(output)
+			print("FAILED test_CommandParser_number - for data set {} received {}".format(datum, output))
+		tests=tests+1
 
 test_CommandParser_text()
 test_CommandParser_number()
+print("Run {} tests".format(tests))
