@@ -26,6 +26,7 @@ import colorama
 import logging
 import main.BotConfig as BotConfig
 import main.CommandParser as CommandParser
+import traceback
 
 
 def main():
@@ -33,6 +34,8 @@ def main():
 
 
 class WolfBot(KikClientCallback):
+    exception_text="Sorry, something went wrong then! Try getting someone to join or leave, or removing/adding Eve."
+
     def __init__(self):
         bot_configuration = BotConfig.get_first_bot();
         self.client = KikClient(self, 
@@ -194,7 +197,11 @@ class WolfBot(KikClientCallback):
         cmd=CommandParser.parse_for_number(msg, "eve set verification time to")
         if cmd[0]:
             if cmd[1]:
-                VerifyStatus(self.client).set_verification_time(cmd[2]*60, chat_message.group_jid, chat_message.from_jid)
+                try:
+                    VerifyStatus(self.client).set_verification_time(cmd[2]*60, chat_message.group_jid, chat_message.from_jid)
+                except:
+                    traceback.print_exc();
+                    self.client.send_chat_message(chat_message.group_jid, self.exception_text);
             else:
                 self.client.send_chat_message(chat_message.group_jid, "give only a number after command\n"
                                                                       "example: eve set verification time to 5")
@@ -204,10 +211,10 @@ class WolfBot(KikClientCallback):
         if cmd[0]:
             if cmd[1]:
                 try:
-                    d = int(s.split("eve set verification days to ")[1])
-                    VerifyStatus(self.client).set_verification_days(d, chat_message.group_jid, chat_message.from_jid)
+                    VerifyStatus(self.client).set_verification_days(cmd[2], chat_message.group_jid, chat_message.from_jid)
                 except:
-                    self.client.send_chat_message(chat_message.group_jid, "Sorry, something went wrong then!")
+                    traceback.print_exc();
+                    self.client.send_chat_message(chat_message.group_jid, self.exception_text);
             else:
                 self.client.send_chat_message(chat_message.group_jid, "give only a number after command\n"
                                                                       "example: eve set verification days to 5")
@@ -216,7 +223,11 @@ class WolfBot(KikClientCallback):
         if s == "eve verification time left":  # user
             t = Database('data.db').get_join_time(chat_message.group_jid)
             if time.time() - t > 43200:
-                self.client.send_chat_message(chat_message.group_jid, "I can verify now")
+                try:
+                    self.client.send_chat_message(chat_message.group_jid, "I can verify now")
+                except:
+                    traceback.print_exc();
+                    self.client.send_chat_message(chat_message.group_jid, self.exception_text);
             else:
                 time_left = 43200 - (time.time() - t)
                 hours = time_left // 3600
@@ -231,7 +242,8 @@ class WolfBot(KikClientCallback):
                 DatabaseUpdate(self.client).welcome_message(cmd[1], chat_message.group_jid,
                                                         chat_message.from_jid)
             except:
-                self.client.send_chat_message(chat_message.group_jid, "Sorry, something went wrong then!")
+                traceback.print_exc();
+                self.client.send_chat_message(chat_message.group_jid, self.exception_text);
             return
 
         # --------------------------
@@ -257,7 +269,8 @@ class WolfBot(KikClientCallback):
                 self.client.send_chat_message(chat_message.group_jid, "Ok, {}".format(cmd[1]))
                 Database("data.db").given_name(cmd[1], chat_message.group_jid, chat_message.from_jid)
             except:
-                self.client.send_chat_message(chat_message.group_jid, "Sorry, something went wrong then!")
+                traceback.print_exc();
+                self.client.send_chat_message(chat_message.group_jid, self.exception_text);
             return
 
         if "eve forget my name" in s:
