@@ -1,5 +1,10 @@
 
 
+# Command with no arguments
+# Returns True/False
+def parse(input, command):
+	return input.lower() == command.lower()
+
 # Command with one text argument
 # Returns tuple of:
 #	True/False	Does input contain command

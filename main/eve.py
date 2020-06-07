@@ -3,7 +3,7 @@ import kik_unofficial.datatypes.xmpp.chatting as chatting
 from kik_unofficial.client import KikClient
 from kik_unofficial.callbacks import KikClientCallback
 from kik_unofficial.datatypes.xmpp.errors import SignUpError, LoginError
-from kik_unofficial.datatypes.xmpp.roster import PeerInfoResponse
+from kik_unofficial.datatypes.xmpp.roster import PeersInfoResponse
 from kik_unofficial.datatypes.xmpp.sign_up import RegisterResponse, UsernameUniquenessResponse
 from kik_unofficial.datatypes.xmpp.login import LoginResponse, ConnectionFailedResponse
 from kik_unofficial.datatypes.xmpp.xiphias import UsersResponse, UsersByAliasResponse
@@ -25,6 +25,7 @@ import nltk
 import colorama
 import logging
 import main.BotConfig as BotConfig
+import main.CommandParser as CommandParser
 
 
 def main():
@@ -38,7 +39,7 @@ class WolfBot(KikClientCallback):
                 kik_username=bot_configuration.username,
                 kik_password=bot_configuration.password, 
                 device_id_override=bot_configuration.device_id,
-                andoid_id_override=bot_configuration.android_id,
+                android_id_override=bot_configuration.android_id,
                 log_level=logging.INFO)
         self.buffer = []
         # for captcha eval
@@ -165,6 +166,7 @@ class WolfBot(KikClientCallback):
 
     def on_group_message_received(self, chat_message: chatting.IncomingGroupChatMessage):
         s = chat_message.body.lower()
+        msg = chat_message.body
 
         # --------------------------
         #  Captcha Eval
@@ -189,23 +191,29 @@ class WolfBot(KikClientCallback):
             VerifyStatus(self.client).set_verification_status("on", chat_message.group_jid,
                                                               chat_message.from_jid)
 
-        elif "eve set verification time to" in s:  # admin
-            try:
-                ti = int(s.split("eve set verification time to ")[1]) * 60
-                VerifyStatus(self.client).set_verification_time(ti, chat_message.group_jid, chat_message.from_jid)
-            except Exception:
+        cmd=CommandParser.parse_for_number(msg, "eve set verification time to")
+        if cmd[0]:
+            if cmd[1]:
+                VerifyStatus(self.client).set_verification_time(cmd[2]*60, chat_message.group_jid, chat_message.from_jid)
+            else:
                 self.client.send_chat_message(chat_message.group_jid, "give only a number after command\n"
                                                                       "example: eve set verification time to 5")
+            return
 
-        elif "eve set verification days to" in s:  # admin
-            try:
-                d = int(s.split("eve set verification days to ")[1])
-                VerifyStatus(self.client).set_verification_days(d, chat_message.group_jid, chat_message.from_jid)
-            except Exception:
+        cmd=CommandParser.parse_for_number(msg, "eve set verification days to")
+        if cmd[0]:
+            if cmd[1]:
+                try:
+                    d = int(s.split("eve set verification days to ")[1])
+                    VerifyStatus(self.client).set_verification_days(d, chat_message.group_jid, chat_message.from_jid)
+                except:
+                    self.client.send_chat_message(chat_message.group_jid, "Sorry, something went wrong then!")
+            else:
                 self.client.send_chat_message(chat_message.group_jid, "give only a number after command\n"
                                                                       "example: eve set verification days to 5")
+            return
 
-        elif s == "eve verification time left":  # user
+        if s == "eve verification time left":  # user
             t = Database('data.db').get_join_time(chat_message.group_jid)
             if time.time() - t > 43200:
                 self.client.send_chat_message(chat_message.group_jid, "I can verify now")
@@ -217,16 +225,20 @@ class WolfBot(KikClientCallback):
                                               "Captcha verification will start after : "
                                               "{} hours and {} minutes".format(hours, minutes))
 
-        elif "eve set welcome message to " in s:  # admin
-            welcome_msg = chat_message.body.split("Eve set welcome message to ")[1]
-            DatabaseUpdate(self.client).welcome_message(welcome_msg, chat_message.group_jid,
+        cmd=CommandParser.parse_for_text(msg, "eve set welcome message to")
+        if cmd[0]:
+            try:
+                DatabaseUpdate(self.client).welcome_message(cmd[1], chat_message.group_jid,
                                                         chat_message.from_jid)
+            except:
+                self.client.send_chat_message(chat_message.group_jid, "Sorry, something went wrong then!")
+            return
 
         # --------------------------
         #  Wiki status
         # -------------------------
 
-        elif s == "eve stop forever":  # admin
+        if s == "eve stop forever":  # admin
             WikiStatus(self.client).set_wiki_status('off', chat_message.group_jid, chat_message.from_jid)
 
         elif s == "eve start":
@@ -239,12 +251,16 @@ class WolfBot(KikClientCallback):
         #  given name
         # -------------------------
 
-        elif "eve call me" in s:
-            name = chat_message.body.split('Eve call me ')[1]
-            self.client.send_chat_message(chat_message.group_jid, "Ok, {}".format(name))
-            Database("data.db").given_name(name, chat_message.group_jid, chat_message.from_jid)
+        cmd=CommandParser.parse_for_text(msg, "eve call me")
+        if cmd[0]:
+            try:
+                self.client.send_chat_message(chat_message.group_jid, "Ok, {}".format(cmd[1]))
+                Database("data.db").given_name(cmd[1], chat_message.group_jid, chat_message.from_jid)
+            except:
+                self.client.send_chat_message(chat_message.group_jid, "Sorry, something went wrong then!")
+            return
 
-        elif "eve forget my name" in s:
+        if "eve forget my name" in s:
             # TODO this does not work :(
             Database("data.db").delete_given_name(chat_message.group_jid, chat_message.from_jid)
 
@@ -396,7 +412,6 @@ class WolfBot(KikClientCallback):
                     self.client.send_chat_message(chat_message.group_jid, substitution[0].value)
 
 
-
     def wiki_manual(self, group_jid, body):
         qu = ' '.join(body.split()[3:])
         try:
@@ -435,7 +450,7 @@ class WolfBot(KikClientCallback):
         # else:
         #     self.bot_info = []
 
-    def on_peer_info_received(self, response: PeerInfoResponse):
+    def on_peer_info_received(self, response: PeersInfoResponse):
         print(colorama.Fore.GREEN + "[+] Peer info: " + str(response.users))
         print('\033[39m')
         if len(response.u) == 0:
